@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 4.0)
-project(ChangeProjectName LANGUAGES CXX)
+project(Simulation LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 26)
 
@@ -14,6 +15,18 @@ FetchContent_Declare(SFML
 
 FetchContent_MakeAvailable(SFML)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(main src/main.cpp
+)
+target_compile_features(main PRIVATE cxx_std_17)
+target_compile_options(main PRIVATE -Wall -Werror -Wextra -Wno-sign-conversion)
+target_link_libraries(main PRIVATE SFML::Graphics)
+target_include_directories(main PRIVATE include)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE SFML::Graphics)
+
+add_custom_command(TARGET main POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/resources
+        $<TARGET_FILE_DIR:main>/resources
+)
+
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT main)
