@@ -4,7 +4,6 @@
 
 #ifndef SIMULATION_BODY_H
 #define SIMULATION_BODY_H
-#include "Logger.h"
 #include "SFML/Graphics.hpp"
 #include <cassert>
 
@@ -12,20 +11,20 @@ namespace Sim {
 class Body : public sf::Drawable {
 public:
   explicit Body(std::string name,
-              float radius,
-              float mass,
-              const sf::Font& font)
-// Logger* logger = nullptr)
-  : m_shape{radius},
-    m_nameText{font},
-    m_name{std::move(name)},
-    m_mass{mass} {
-    // m_logger{logger}
+                float radius,
+                float mass,
+                const sf::Font& font)
+    : m_shape{radius},
+      m_nameText{font},
+      m_name{std::move(name)},
+      m_mass{mass} {
     assert(radius > 0);
     assert(mass > 0);
     m_shape.setOrigin(m_shape.getGeometricCenter());
     initText();
   }
+
+  std::string_view getName() const { return m_name; }
 
   float getRadius() const { return m_shape.getRadius(); }
 
@@ -50,9 +49,16 @@ public:
 
   void updatePosition(float dt) {
     setPosition(getPosition() + dt * m_velocity);
-    // if (m_logger) {
-    //   m_logger->log(std::format("dt = {}; Updated position: {}", dt, vecToString(m_shape.getPosition())));
-    // }
+  }
+
+  /**
+   * Get the vector pointing from this body to the other body.
+   *
+   * @param other the other body.
+   * @return a unit vector in the direction of the other body.
+   */
+  sf::Vector2f getDirectionTo(const Body& other) const {
+    return (other.getPosition() - getPosition()).normalized();
   }
 
 protected:
@@ -67,7 +73,6 @@ private:
   std::string m_name{};
   sf::Vector2f m_velocity{};
   float m_mass{};
-  // Logger* m_logger{};
 
   void initText() {
     m_nameText.setString(m_name);

@@ -6,8 +6,8 @@
 #define SIMULATION_CONSTANTS_H
 
 namespace Sim::Constants {
-  constexpr int windowWidth = 1000;
-  constexpr int windowHeight = 800;
+  constexpr int wWidth = 1000; // window width
+  constexpr int wHeight = 800; // window height
 }
 
 #endif //SIMULATION_CONSTANTS_H

@@ -2,6 +2,9 @@
 // Created by sergey on 9/9/26.
 //
 #include "Collisions.h"
+
+#include <complex>
+
 #include "Constants.h"
 #include "Body.h"
 
@@ -11,7 +14,7 @@ bool collidesLeftWall(const Body& body) {
 }
 
 bool collidesRightWall(const Body& body) {
-  return body.getPosition().x + body.getRadius() >= Constants::windowWidth;
+  return body.getPosition().x + body.getRadius() >= Constants::wWidth;
 }
 
 bool collidesTopWall(const Body& body) {
@@ -19,7 +22,7 @@ bool collidesTopWall(const Body& body) {
 }
 
 bool collidesBottomWall(const Body& body) {
-  return body.getPosition().y + body.getRadius() >= Constants::windowHeight;
+  return body.getPosition().y + body.getRadius() >= Constants::wHeight;
 }
 
 // Returns true if the bodies collide.
@@ -36,7 +39,7 @@ void handleWallCollisions(std::vector<Body>& bodies) {
       body.setPosition({body.getRadius(), body.getPosition().y});
     } else if (collidesRightWall(body)) {
       body.setVelocity(body.getVelocity().componentWiseMul({-1, 1}));
-      body.setPosition({Constants::windowWidth - body.getRadius(), body.getPosition().y});
+      body.setPosition({Constants::wWidth - body.getRadius(), body.getPosition().y});
     }
 
     if (collidesTopWall(body)) {
@@ -44,14 +47,10 @@ void handleWallCollisions(std::vector<Body>& bodies) {
       body.setPosition({body.getPosition().x, body.getRadius()});
     } else if (collidesBottomWall(body)) {
       body.setVelocity(body.getVelocity().componentWiseMul({1, -1}));
-      body.setPosition({body.getPosition().x, Constants::windowHeight - body.getRadius()});
+      body.setPosition({body.getPosition().x, Constants::wHeight - body.getRadius()});
     }
   }
 }
-
-//------------------update velocities after collision---------------
-
-
 
 void updateVelocitiesAfterCollision(Body& b1, Body& b2) {
   // The velocity of each body is broken into two components: normal and tangent.
@@ -62,6 +61,12 @@ void updateVelocitiesAfterCollision(Body& b1, Body& b2) {
   // There's no energy dissipation.
   const auto m1 = b1.getMass();
   const auto m2 = b2.getMass();
+  auto axis = b2.getPosition() - b1.getPosition();
+  if (axis == sf::Vector2f{}) {
+    // axis is 0, since the bodies have the same position.
+    // Define a fallback axis.
+    axis = sf::Vector2f{1, 0};
+  }
   const auto b1NormalBefore = b1.getVelocity().projectedOnto(axis);
   const auto b2NormalBefore = b2.getVelocity().projectedOnto(axis);
 
@@ -81,18 +86,34 @@ void updatePositionsToUndoIntersection(Body& b1, Body& b2) {
   // When two bodies penetrate each other (intersect),
   // they are moved in the opposite directions along their line of centers.
   // The offset is proportional to mass: bigger mass => lesser offset, smaller mass => greater offset.
-  const auto axis = b2.getPosition() - b1.getPosition();
   const auto distBetweenCenters = (b2.getPosition() - b1.getPosition()).length();
   const auto radiusSum = b1.getRadius() + b2.getRadius();
   const auto penetrationDepth = radiusSum - distBetweenCenters;
   const auto massSum = b1.getMass() + b2.getMass();
-  const auto b1OffsetLength = b2.getMass() / massSum * penetrationDepth;
-  const auto b2OffsetLength = b1.getMass() / massSum * penetrationDepth;
-  const auto b1OffsetVector = -1.f * axis.normalized() * b1OffsetLength;
-  const auto b2OffsetVector = axis.normalized() * b2OffsetLength;
-  b1.move(b1OffsetVector);
-  b2.move(b2OffsetVector);
+  const auto offsetLengthB1 = b2.getMass() / massSum * penetrationDepth;
+  const auto offsetLengthB2 = b1.getMass() / massSum * penetrationDepth;
+  const auto normalizedAxis = (b2.getPosition() - b1.getPosition()).normalized();
+  const auto offsetVectorB1 = -1.f * normalizedAxis * offsetLengthB1;
+  const auto offsetVectorB2 = normalizedAxis * offsetLengthB2;
+  b1.move(offsetVectorB1);
+  b2.move(offsetVectorB2);
 }
+
+bool areApproachingEachOther(const Body& b1, const Body& b2) {
+  // Two bodies are approaching each other if and only if
+  // the projection of their relative velocity (v2 - v1) onto the vector that
+  // connects their positions (pos2 - pos1) is negative.
+  // We'll calculate the dot product instead of projection,
+  // because it has the same sign and is faster to calculate.
+  // Reminder: projection of u onto v = dot(u, v) / length(v), where v != 0.
+  // length(v) > 0, so it doesn't affect the sign.
+  const auto relativeVelocity = b2.getVelocity() - b1.getVelocity();
+  const auto axis = b1.getDirectionTo(b2);
+  assert(axis.lengthSquared() != 0 && "Error: two bodies have the same position.");
+
+  return relativeVelocity.dot(axis) < 0;
+}
+
 
 void handleCollisionsBetweenBodies(std::vector<Body>& bodies) {
   for (std::size_t i = 0; i < bodies.size(); ++i) {
@@ -101,13 +122,8 @@ void handleCollisionsBetweenBodies(std::vector<Body>& bodies) {
     for (std::size_t j = i + 1; j < bodies.size(); ++j) {
       auto& b2 = bodies[j];
 
-      const auto distBetweenCenters = (b2.getPosition() - b1.getPosition()).length();
-
-      if (const auto radiusSum = b1.getRadius() + b2.getRadius();
-        distBetweenCenters <= radiusSum) {
-        //-------------------- handle penetration--------------
+      if (areApproachingEachOther(b1, b2) && collide(b1, b2)) {
         updatePositionsToUndoIntersection(b1, b2);
-
         updateVelocitiesAfterCollision(b1, b2);
       }
     }
