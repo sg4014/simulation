@@ -16,6 +16,9 @@ FetchContent_Declare(SFML
 FetchContent_MakeAvailable(SFML)
 
 add_executable(main src/main.cpp
+        src/Collisions.cpp
+        src/Util.cpp
+        src/Util.h
 )
 target_compile_features(main PRIVATE cxx_std_17)
 target_compile_options(main PRIVATE -Wall -Werror -Wextra -Wno-sign-conversion)
