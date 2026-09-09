@@ -7,10 +7,11 @@
 #include "Body.h"
 #include "SFML/Graphics.hpp"
 #include <string>
-
+namespace Sim {
 std::string vecToString(sf::Vector2f vec);
 
 sf::Vector2f getWindowCenter(const sf::RenderWindow& window);
 
-[[maybe_unused]] void printPosition(const Sim::Body& body);
+[[maybe_unused]] void printPosition(const Body& body);
+}
 #endif //SIMULATION_UTIL_H

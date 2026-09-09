@@ -5,7 +5,7 @@
 #ifndef SIMULATION_CONSTANTS_H
 #define SIMULATION_CONSTANTS_H
 
-namespace Constants {
+namespace Sim::Constants {
   constexpr int windowWidth = 1000;
   constexpr int windowHeight = 800;
 }

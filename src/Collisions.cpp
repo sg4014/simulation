@@ -6,22 +6,20 @@
 #include "Body.h"
 
 namespace Sim {
-using namespace Constants;
-
 bool collidesLeftWall(const Body& body) {
-  return body.getPosition().x < body.getRadius();
+  return body.getPosition().x <= body.getRadius();
 }
 
 bool collidesRightWall(const Body& body) {
-  return body.getPosition().x + body.getRadius() > windowWidth;
+  return body.getPosition().x + body.getRadius() >= Constants::windowWidth;
 }
 
 bool collidesTopWall(const Body& body) {
-  return body.getPosition().y < body.getRadius();
+  return body.getPosition().y <= body.getRadius();
 }
 
 bool collidesBottomWall(const Body& body) {
-  return body.getPosition().y + body.getRadius() > windowHeight;
+  return body.getPosition().y + body.getRadius() >= Constants::windowHeight;
 }
 
 // Returns true if the bodies collide.
@@ -51,6 +49,51 @@ void handleWallCollisions(std::vector<Body>& bodies) {
   }
 }
 
+//------------------update velocities after collision---------------
+
+
+
+void updateVelocitiesAfterCollision(Body& b1, Body& b2) {
+  // The velocity of each body is broken into two components: normal and tangent.
+  // Normal velocity is the velocity along the axis, which is perpendicular to the common tangent.
+  // Tangent velocity is the velocity along the common tangent.
+  // The formulas for post-collision normal velocities
+  // are derived from the impulse and kinetic energy conservation laws.
+  // There's no energy dissipation.
+  const auto m1 = b1.getMass();
+  const auto m2 = b2.getMass();
+  const auto b1NormalBefore = b1.getVelocity().projectedOnto(axis);
+  const auto b2NormalBefore = b2.getVelocity().projectedOnto(axis);
+
+  const auto b1NormalAfter = (m1 - m2) / (m1 + m2) * b1NormalBefore
+                             + (2 * m2) / (m1 + m2) * b2NormalBefore;
+
+  const auto b2NormalAfter = b1NormalAfter + b1NormalBefore - b2NormalBefore;
+
+  const auto b1TangentBefore = b1.getVelocity() - b1NormalBefore;
+  const auto b2TangentBefore = b2.getVelocity() - b2NormalBefore;
+
+  b1.setVelocity(b1NormalAfter + b1TangentBefore);
+  b2.setVelocity(b2NormalAfter + b2TangentBefore);
+}
+
+void updatePositionsToUndoIntersection(Body& b1, Body& b2) {
+  // When two bodies penetrate each other (intersect),
+  // they are moved in the opposite directions along their line of centers.
+  // The offset is proportional to mass: bigger mass => lesser offset, smaller mass => greater offset.
+  const auto axis = b2.getPosition() - b1.getPosition();
+  const auto distBetweenCenters = (b2.getPosition() - b1.getPosition()).length();
+  const auto radiusSum = b1.getRadius() + b2.getRadius();
+  const auto penetrationDepth = radiusSum - distBetweenCenters;
+  const auto massSum = b1.getMass() + b2.getMass();
+  const auto b1OffsetLength = b2.getMass() / massSum * penetrationDepth;
+  const auto b2OffsetLength = b1.getMass() / massSum * penetrationDepth;
+  const auto b1OffsetVector = -1.f * axis.normalized() * b1OffsetLength;
+  const auto b2OffsetVector = axis.normalized() * b2OffsetLength;
+  b1.move(b1OffsetVector);
+  b2.move(b2OffsetVector);
+}
+
 void handleCollisionsBetweenBodies(std::vector<Body>& bodies) {
   for (std::size_t i = 0; i < bodies.size(); ++i) {
     auto& b1 = bodies[i];
@@ -58,49 +101,16 @@ void handleCollisionsBetweenBodies(std::vector<Body>& bodies) {
     for (std::size_t j = i + 1; j < bodies.size(); ++j) {
       auto& b2 = bodies[j];
 
-      // vector from current's to other's center
-      const auto axis = b2.getPosition() - b1.getPosition();
-
-      // check collisions
       const auto distBetweenCenters = (b2.getPosition() - b1.getPosition()).length();
+
       if (const auto radiusSum = b1.getRadius() + b2.getRadius();
         distBetweenCenters <= radiusSum) {
-        // handle penetration
-        const auto penetrationDepth = radiusSum - distBetweenCenters;
-        const auto massSum = b1.getMass() + b2.getMass();
-        const auto b1OffsetLength = b2.getMass() / massSum * penetrationDepth;
-        const auto b2OffsetLength = b1.getMass() / massSum * penetrationDepth;
-        const auto b1OffsetVector = -1.f * axis.normalized() * b1OffsetLength;
-        const auto b2OffsetVector = axis.normalized() * b2OffsetLength;
-        b1.move(b1OffsetVector);
-        b2.move(b2OffsetVector);
+        //-------------------- handle penetration--------------
+        updatePositionsToUndoIntersection(b1, b2);
 
-        // calculate normal and tangent velocities (relative to common tangent)
+        updateVelocitiesAfterCollision(b1, b2);
       }
-
-      // if collide:
-      // ==== update current ====
-      // 1. reset positions
-
-      // 2. calculate normal and tangent velocities (relative to common tangent)
-      const auto normalVelocity = b1.getVelocity().projectedOnto(axis);
-      const auto tangentVelocity = b1.getVelocity() - normalVelocity;
-      // calculate new normal velocity based on formula derived from the conservation laws
-
-      // ==== update other ======
-
-      // TODO: do the math
-      // if collide(current, other):
-      //  reset positions so the bodies are not intersecting
-      //  calculate normal velocities introduced by collision (use the conservation laws of impulse and kinetic energy)
-      //
-      //  normalVelocity = projection of velocity on the line of centers
-      //  tangent velocity = velocity - normalVelocity
-      //
-      //  newNormalVelocityA = normalVelocity *
-      //  newVelocity = tangentVelocity + newNormalVelocity
     }
   }
 }
-
 }

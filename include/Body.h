@@ -10,15 +10,16 @@
 
 namespace Sim {
 class Body : public sf::Drawable {
+public:
   explicit Body(std::string name,
-                float radius,
-                float mass,
-                const sf::Font& font)
-  // Logger* logger = nullptr)
-    : m_shape{radius},
-      m_nameText{font},
-      m_name{std::move(name)},
-      m_mass{mass} {
+              float radius,
+              float mass,
+              const sf::Font& font)
+// Logger* logger = nullptr)
+  : m_shape{radius},
+    m_nameText{font},
+    m_name{std::move(name)},
+    m_mass{mass} {
     // m_logger{logger}
     assert(radius > 0);
     assert(mass > 0);
@@ -26,7 +27,6 @@ class Body : public sf::Drawable {
     initText();
   }
 
-public:
   float getRadius() const { return m_shape.getRadius(); }
 
   sf::Vector2f getPosition() const { return m_shape.getPosition(); }

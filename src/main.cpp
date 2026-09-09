@@ -1,4 +1,5 @@
 #include "Constants.h"
+#include "Util.h"
 #include "Body.h"
 #include "Collisions.h"
 #include "Logger.h"
@@ -6,7 +7,7 @@
 #include <cmath>
 
 
-#define DEBUG
+#undef DEBUG
 
 namespace Sim {
 sf::Font font;
@@ -17,23 +18,19 @@ void renderBodies(const std::vector<Body>& bodies, sf::RenderWindow& window) {
   }
 }
 
-
-
 void updatePositions(std::vector<Body>& bodies, float dt) {
   for (auto& body : bodies) {
     body.updatePosition(dt);
   }
 }
-
 }
 
 int main() {
   // TODO: add imgui
+  namespace Constants = Sim::Constants;
 
   sf::RenderWindow window{sf::VideoMode{{Constants::windowWidth, Constants::windowHeight}}, "Simulation"};
   window.setVerticalSyncEnabled(true);
-
-  const bool isDebug = true;
 
   //--------------------Font-----------------------------------------
   if (!Sim::font.openFromFile("resources/arial.ttf")) {
@@ -43,24 +40,34 @@ int main() {
 
   //--------------------DEFINE BODIES--------------------------------
   std::vector bodies{
-      Sim::Body{"earth", 60, 10, Sim::font},
-      Sim::Body{"sun", 20, 1e6, Sim::font},
-      Sim::Body{"saturn", 100, 50, Sim::font}
+      Sim::Body{"earth", 80, 80, Sim::font},
+      Sim::Body{"sun", 20, 10, Sim::font},
+      Sim::Body{"saturn", 150, 150, Sim::font}
   };
 
+  const std::uint8_t opacity = 100;
+  const sf::Color blue{0, 0, 255, opacity};
+  const sf::Color red{255, 0, 0, opacity};
+  const sf::Color green{0, 255, 0, opacity};
   // earth
-  bodies[0].setFillColor(sf::Color::Blue);
-  bodies[0].setPosition({200, 50});
-  bodies[0].setVelocity({0, 600});
+  bodies[0].setFillColor(blue);
+  bodies[0].setPosition({
+      bodies[0].getRadius(),
+      Constants::windowHeight / 2.f
+  });
+  bodies[0].setVelocity({200, 400});
 
   // sun
-  bodies[1].setFillColor(sf::Color::Yellow);
+  bodies[1].setFillColor(red);
   bodies[1].setPosition(Sim::getWindowCenter(window));
 
   // saturn
-  bodies[2].setFillColor({246, 223, 108, 230});
-  bodies[2].setPosition({Constants::windowWidth - 100, Constants::windowHeight - 200});
-  bodies[2].setVelocity({-10, -300});
+  bodies[2].setFillColor(green);
+  bodies[2].setPosition({
+      Constants::windowWidth - bodies[2].getRadius(),
+      Constants::windowHeight / 2.f
+  });
+  bodies[2].setVelocity({-200, 0});
 
   //--------------------Clock-----------------------------------------
   sf::Clock clock{};
@@ -68,7 +75,7 @@ int main() {
   float dt = 0; // the time between the rendering of the last frame and the one before it
 
 #ifdef DEBUG
-    dt = 1.f / 25.f;
+  dt = 1.f / 25.f;
 #endif
 
   //--------------------Main loop-------------------------------------
@@ -91,6 +98,7 @@ int main() {
           default:
             dt = 1.f / 60.f;
         }
+        window.clear(sf::Color::White);
         handleWallCollisions(bodies);
         handleCollisionsBetweenBodies(bodies);
         updatePositions(bodies, dt);
