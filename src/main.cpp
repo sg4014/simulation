@@ -7,16 +7,50 @@
 #include "SFML/Graphics.hpp"
 #include <cmath>
 
+namespace Sim {
+std::vector<Body> g_bodies{};
+}
+
 namespace Sim::ui {
 bool isHidden = false;
-bool IsDisplayName = true;
-int circlePointCount = 30;
-std::size_t activeBodyIdx{};
+bool isDisplayName = true;
+int bodySides = 30;
+int activeBodyIdx{};
 float radius = 100;
 float velocity[2];
+float imguiColor[3]{0, 1, 1};
+
+const char* names[3]{"earth", "sun", "saturn"};
+
+constexpr std::array backgrounds{sf::Color::Black, sf::Color::White};
+std::size_t bgIndex = 0;
 
 sf::Vector2f arrToVec(const float arr[2]) {
   return {arr[0], arr[1]};
+}
+
+// The ImGui color {r, g, b} wheel requires floats from 0 to 1.
+// But SFML requires std::uint8_t from 0 to 255.
+sf::Color toSFMLColor(const float col[3]) {
+  return sf::Color{
+      static_cast<std::uint8_t>(col[0] * 255),
+      static_cast<std::uint8_t>(col[1] * 255),
+      static_cast<std::uint8_t>(col[2] * 255)
+  };
+}
+
+void resetParameters() {
+  auto& activeBody = g_bodies[activeBodyIdx];
+  velocity[0] = activeBody.getVelocity().x;
+  velocity[1] = activeBody.getVelocity().y;
+  isDisplayName = activeBody.isNameDisplayed();
+  isHidden = activeBody.isHidden();
+  bodySides = static_cast<int>(activeBody.getPointCount());
+  radius = activeBody.getRadius();
+  const auto sfmlColor = activeBody.getFillColor();
+  imguiColor[0] = static_cast<float>(sfmlColor.r / 255);
+  imguiColor[1] = static_cast<float>(sfmlColor.g / 255);
+  imguiColor[2] = static_cast<float>(sfmlColor.b / 255);
 }
 }
 
@@ -68,117 +102,116 @@ void initBodies(std::vector<Body>& bodies, const sf::Font& font) {
   });
   bodies[2].setVelocity({-200, 0});
 }
+
+void processInput(sf::RenderWindow& window) {
+  while (const auto event = window.pollEvent()) {
+    ImGui::SFML::ProcessEvent(window, *event);
+
+    if (event->is<sf::Event::Closed>())
+      window.close();
+    else if (const auto mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+      for (std::size_t i = 0; i < Sim::g_bodies.size(); ++i) {
+        if (g_bodies[i].contains(mouseButtonPressed->position)) {
+          ui::activeBodyIdx = static_cast<int>(i);
+          ui::resetParameters();
+          break;
+        }
+      }
+    }
+  }
 }
 
-int main() {
-  namespace Constants = Sim::Constants;
-
-  sf::RenderWindow window{sf::VideoMode{{Constants::wWidth, Constants::wHeight}}, "Simulation"};
-  window.setFramerateLimit(75);
-
-  //--------------------ImGui--------------------------------------
+bool initImGui(sf::RenderWindow& window) {
   if (!ImGui::SFML::Init(window)) {
-    std::cerr << "Couldn't initialize ImGui!\n";
-    std::exit(1);
+    return false;
   }
 
   // Scale ImGui UI and text size by 2
   ImGui::GetStyle().ScaleAllSizes(2.0f);
   ImGui::GetIO().FontGlobalScale = 2.0f;
+  return true;
+}
 
-  // The ImGui color {r, g, b} wheel requires floats from 0 to 1.
-  // But SFML requires std::uint8_t from 0 to 255.
-  // That's why we can't easily use sf::Color for imgui.
-  [[maybe_unused]] float imguiColor[3] = {0.0f, 1.0f, 1.0f};
+void defineUI() {
+  ImGui::Begin("Shape Properties");
+  if (ImGui::Combo("Shape", &ui::activeBodyIdx, ui::names, 3)) {
+    ui::resetParameters();
+  }
 
-  //--------------------Font-----------------------------------------
+  auto& activeBody = g_bodies[ui::activeBodyIdx];
+
+  if (ImGui::Checkbox("Hidden", &ui::isHidden)) {
+    activeBody.setHidden(ui::isHidden);
+  }
+  if (ImGui::SliderInt("Sides", &ui::bodySides, 3, 64)) {
+    activeBody.setPointCount(ui::bodySides);
+  }
+  if (ImGui::SliderFloat("Radius", &ui::radius, 10.0f, 200.0f)) {
+    activeBody.setRadius(ui::radius);
+  }
+  if (ImGui::SliderFloat2("Velocity", ui::velocity, -2000.0f, 2000.0f)) {
+    activeBody.setVelocity(ui::arrToVec(ui::velocity));
+  }
+  if (ImGui::ColorEdit3("Color", ui::imguiColor)) {
+    activeBody.setFillColor(ui::toSFMLColor(ui::imguiColor));
+  }
+  if (ImGui::Checkbox("Display name", &ui::isDisplayName)) {
+    activeBody.setIsNameDisplayed(ui::isDisplayName);
+  }
+  if (ImGui::Button("Switch Theme")) {
+    ui::bgIndex = (ui::bgIndex + 1) % ui::backgrounds.size();
+  }
+  ImGui::End();
+}
+
+void update(sf::RenderWindow& window, sf::Time dt) {
+  handleWallCollisions(Sim::g_bodies);
+  handleCollisionsBetweenBodies(Sim::g_bodies);
+  updatePositions(Sim::g_bodies, dt);
+
+  ImGui::SFML::Update(window, dt);
+}
+
+void render(sf::RenderWindow& window) {
+  window.clear(ui::backgrounds[ui::bgIndex]);
+  renderBodies(g_bodies, window);
+  ImGui::SFML::Render(window);
+  window.display();
+}
+}
+
+int main() {
+  sf::RenderWindow window{sf::VideoMode{
+                              {Sim::Constants::wWidth, Sim::Constants::wHeight}
+                          },
+                          "Simulation"};
+  window.setFramerateLimit(75);
+
+  if (!Sim::initImGui(window)) {
+    std::cerr << "Couldn't initialize ImGui.\n";
+    std::exit(1);
+  }
+
   sf::Font font;
-
   if (!font.openFromFile("resources/arial.ttf")) {
     std::cerr << "Couldn't open font file resources/arial.ttf\n";
     std::exit(1);
   }
 
-  //--------------------DEFINE BODIES--------------------------------
-  std::vector<Sim::Body> bodies{};
-  Sim::initBodies(bodies, font);
+  Sim::initBodies(Sim::g_bodies, font);
 
   //--------------------Clock-----------------------------------------
   sf::Clock deltaClock{};
   deltaClock.start();
   sf::Time dt{}; // the time between the rendering of the last frame and the one before it
 
-  constexpr std::array backgrounds{sf::Color::Black, sf::Color::White};
-  std::size_t bgIndex = 0;
-
   //--------------------Main loop-------------------------------------
   while (window.isOpen()) {
-    while (const auto event = window.pollEvent()) {
-      ImGui::SFML::ProcessEvent(window, *event);
-
-      if (event->is<sf::Event::Closed>())
-        window.close();
-      else if (const auto mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
-        for (std::size_t i = 0; i < bodies.size(); ++i) {
-          if (bodies[i].contains(mouseButtonPressed->position)) {
-            Sim::ui::activeBodyIdx = i;
-            Sim::ui::velocity[0] = bodies[i].getVelocity().x;
-            Sim::ui::velocity[1] = bodies[i].getVelocity().y;
-            Sim::ui::IsDisplayName = bodies[i].isNameDisplayed();
-            Sim::ui::isHidden = bodies[i].isHidden();
-            Sim::ui::circlePointCount = static_cast<int>(bodies[i].getPointCount());
-            Sim::ui::radius = bodies[i].getRadius();
-            break;
-          }
-        }
-      }
-    }
-
-    // ====================== Update ====================
-    // update ui toggled
-    Sim::Body& activeBody = bodies[Sim::ui::activeBodyIdx];
-    activeBody.setIsNameDisplayed(Sim::ui::IsDisplayName);
-    activeBody.setPointCount(Sim::ui::circlePointCount);
-    activeBody.setRadius(Sim::ui::radius); // IMPORTANT: update geometry _before_ handling collisions
-    activeBody.setHidden(Sim::ui::isHidden);
-
-    handleWallCollisions(bodies);
-    handleCollisionsBetweenBodies(bodies);
-    updatePositions(bodies, dt);
-
-    ImGui::SFML::Update(window, dt);
-
-    // ======Clear========
-    window.clear(backgrounds[bgIndex]);
-
-    // ====================== Render ======================
-    renderBodies(bodies, window);
-    // -----render imgui start-----
-    ImGui::Begin("Shape Properties");
-    ImGui::Combo("Shape", )
-    ImGui::Checkbox("Hidden", &Sim::ui::isHidden);
-    ImGui::SliderInt("Sides", &Sim::ui::circlePointCount, 3, 64);
-    ImGui::SliderFloat("Radius", &Sim::ui::radius, 10.0f, 200.0f);
-    if (ImGui::SliderFloat2("velocity", Sim::ui::velocity, -2000.0f, 2000.0f)) {
-      activeBody.setVelocity(Sim::ui::arrToVec(Sim::ui::velocity));
-    }
-    // if (ImGui::SliderFloat("x", &Sim::ui::velocityX, -300.0f, 300.0f, "%.1f")) {
-    //   activeBody.setVelocity({Sim::ui::velocityX, activeBody.getVelocity().y});
-    // }
-    // if (ImGui::SliderFloat("y", &Sim::ui::velocityY, -300.0f, 300.0f, "%.1f")) {
-    //   activeBody.setVelocity({activeBody.getVelocity().x, Sim::ui::velocityY});
-    // }
-    if (ImGui::Button("Switch Theme")) {
-      bgIndex = (bgIndex + 1) % backgrounds.size();
-    }
-    ImGui::Checkbox("Display name", &Sim::ui::IsDisplayName);
-    ImGui::End();
-    ImGui::SFML::Render(window);
-
-    // -----render imgui end-----
+    Sim::processInput(window);
+    Sim::update(window, dt);
+    Sim::defineUI();
+    Sim::render(window);
     dt = deltaClock.restart();
-
-    window.display();
   }
 
   return 0;

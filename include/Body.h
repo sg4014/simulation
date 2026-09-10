@@ -50,6 +50,10 @@ public:
     setPosition(getPosition() + offset);
   }
 
+  sf::Color getFillColor() const {
+    return m_shape.getFillColor();
+  }
+
   void setFillColor(sf::Color color) {
     m_shape.setFillColor(color);
   }
