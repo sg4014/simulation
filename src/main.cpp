@@ -59,12 +59,6 @@ void initBodies(std::vector<Body>& bodies, const sf::Font& font) {
   });
   bodies[2].setVelocity({-200, 0});
 }
-
-void updatePointCount(std::vector<Body>& bodies) {
-  for (auto& body: bodies) {
-    body.setPointCount(static_cast<std::size_t>(ui::circlePointCount));
-  }
-}
 }
 
 int main() {
@@ -117,14 +111,29 @@ int main() {
 
       if (event->is<sf::Event::Closed>())
         window.close();
+      else if (const auto mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+        for (std::size_t i = 0; i < bodies.size(); ++i) {
+          if (bodies[i].contains(mouseButtonPressed->position)) {
+            Sim::ui::activeBodyIdx = i;
+            break;
+          }
+        }
+      }
     }
 
 
     // ====================== Update ====================
+    // update ui toggled
+    Sim::Body& activeBody = bodies[Sim::ui::activeBodyIdx];
+    activeBody.setIsDisplayName(Sim::ui::IsDisplayName);
+    activeBody.setPointCount(Sim::ui::circlePointCount);
+    activeBody.setRadius(Sim::ui::radius); // IMPORTANT: update geometry _before_ handling collisions
+    activeBody.setVelocity({Sim::ui::velocityX, Sim::ui::velocityY});
+
     handleWallCollisions(bodies);
     handleCollisionsBetweenBodies(bodies);
     updatePositions(bodies, dt);
-    updatePointCount(bodies);
+
     ImGui::SFML::Update(window, dt);
 
     // ======Clear========
@@ -137,8 +146,12 @@ int main() {
     ImGui::Text("window text");
     ImGui::Checkbox("Draw 1st body", &Sim::ui::drawFirstBody);
     ImGui::SameLine();
-    ImGui::Checkbox("Draw body name", &Sim::ui::drawBodyName);
+    ImGui::Checkbox("Display name", &Sim::ui::IsDisplayName);
     ImGui::SliderInt("Sides", &Sim::ui::circlePointCount, 3, 64);
+    ImGui::SliderFloat("Radius", &Sim::ui::radius, 10.0f, 200.0f);
+    ImGui::Text("Velocity:");
+    ImGui::SliderFloat("x", &Sim::ui::velocityX, -300.0f, 300.0f, "%.1f");
+    ImGui::SliderFloat("y", &Sim::ui::velocityY, -300.0f, 300.0f, "%.1f");
     if (ImGui::Button("Switch Theme")) {
       bgIndex = (bgIndex + 1) % backgrounds.size();
     }

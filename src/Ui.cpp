@@ -6,6 +6,10 @@
 
 namespace Sim::ui {
 bool drawFirstBody = true;
-bool drawBodyName = true;
+bool IsDisplayName = true;
 int circlePointCount = 30;
+std::size_t activeBodyIdx{};
+float radius = 100;
+float velocityX{};
+float velocityY{};
 }

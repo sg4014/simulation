@@ -8,7 +8,11 @@
 
 namespace Sim::ui {
 extern bool drawFirstBody;
-extern bool drawBodyName;
+extern bool IsDisplayName;
 extern int circlePointCount;
+extern std::size_t activeBodyIdx;
+extern float radius;
+extern float velocityX;
+extern float velocityY;
 }
 #endif //SIMULATION_UI_H

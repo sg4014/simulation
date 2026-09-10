@@ -33,6 +33,11 @@ public:
     return m_shape.getRadius();
   }
 
+  void setRadius(float r) {
+    m_shape.setRadius(r);
+    m_shape.setOrigin(m_shape.getGeometricCenter());
+  }
+
   sf::Vector2f getPosition() const {
     return m_shape.getPosition();
   }
@@ -70,6 +75,10 @@ public:
     setPosition(getPosition() + dt * m_velocity);
   }
 
+  void setIsDisplayName(bool v) {
+    m_IsDisplayName = v;
+  }
+
   /**
    * Get the vector pointing from this body to the other body.
    *
@@ -80,10 +89,15 @@ public:
     return (other.getPosition() - getPosition()).normalized();
   }
 
+  template<typename T>
+  bool contains(sf::Vector2<T> position) const {
+    return (static_cast<sf::Vector2f>(position) - getPosition()).lengthSquared() <= getRadius() * getRadius();
+  }
+
 protected:
   void draw(sf::RenderTarget& target, sf::RenderStates states) const override {
     target.draw(m_shape, states);
-    if (ui::drawBodyName) {
+    if (m_IsDisplayName) {
       target.draw(m_nameText);
     }
   }
@@ -94,6 +108,7 @@ private:
   std::string m_name{};
   sf::Vector2f m_velocity{};
   float m_mass{};
+  bool m_IsDisplayName = true;
 
   void initText() {
     m_nameText.setString(m_name);
