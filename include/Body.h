@@ -4,7 +4,6 @@
 
 #ifndef SIMULATION_BODY_H
 #define SIMULATION_BODY_H
-#include "Ui.h"
 #include "SFML/Graphics.hpp"
 #include <cassert>
 
@@ -67,6 +66,10 @@ public:
     m_velocity = velocity;
   }
 
+  std::size_t getPointCount() const {
+    return m_shape.getPointCount();
+  }
+
   void setPointCount(std::size_t count) {
     m_shape.setPointCount(count);
   }
@@ -75,8 +78,20 @@ public:
     setPosition(getPosition() + dt * m_velocity);
   }
 
-  void setIsDisplayName(bool v) {
-    m_IsDisplayName = v;
+  void setIsNameDisplayed(bool v) {
+    m_isNameDisplayed = v;
+  }
+
+  bool isNameDisplayed() const {
+    return m_isNameDisplayed;
+  }
+
+  bool isHidden() const {
+    return m_isHidden;
+  }
+
+  void setHidden(bool hidden) {
+    m_isHidden = hidden;
   }
 
   /**
@@ -97,7 +112,7 @@ public:
 protected:
   void draw(sf::RenderTarget& target, sf::RenderStates states) const override {
     target.draw(m_shape, states);
-    if (m_IsDisplayName) {
+    if (m_isNameDisplayed) {
       target.draw(m_nameText);
     }
   }
@@ -108,7 +123,8 @@ private:
   std::string m_name{};
   sf::Vector2f m_velocity{};
   float m_mass{};
-  bool m_IsDisplayName = true;
+  bool m_isNameDisplayed = true;
+  bool m_isHidden = false;
 
   void initText() {
     m_nameText.setString(m_name);

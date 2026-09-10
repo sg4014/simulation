@@ -27,6 +27,9 @@ bool collidesBottomWall(const Body& body) {
 
 // Returns true if the bodies collide.
 bool collide(const Body& b1, const Body& b2) {
+  if (b1.isHidden() || b2.isHidden())
+    return false;
+
   const auto distBetweenCentersSquared = (b2.getPosition() - b1.getPosition()).lengthSquared();
   const auto radiusSum = b1.getRadius() + b2.getRadius();
   return distBetweenCentersSquared <= radiusSum * radiusSum;
@@ -34,6 +37,9 @@ bool collide(const Body& b1, const Body& b2) {
 
 void handleWallCollisions(std::vector<Body>& bodies) {
   for (auto& body : bodies) {
+    if (body.isHidden())
+      continue;
+
     if (collidesLeftWall(body)) {
       body.setVelocity(body.getVelocity().componentWiseMul({-1, 1}));
       body.setPosition({body.getRadius(), body.getPosition().y});
@@ -118,9 +124,13 @@ bool areApproachingEachOther(const Body& b1, const Body& b2) {
 void handleCollisionsBetweenBodies(std::vector<Body>& bodies) {
   for (std::size_t i = 0; i < bodies.size(); ++i) {
     auto& b1 = bodies[i];
+    if (b1.isHidden())
+      continue;
 
     for (std::size_t j = i + 1; j < bodies.size(); ++j) {
       auto& b2 = bodies[j];
+      if (b2.isHidden())
+        continue;
 
       if (areApproachingEachOther(b1, b2) && collide(b1, b2)) {
         updatePositionsToUndoIntersection(b1, b2);

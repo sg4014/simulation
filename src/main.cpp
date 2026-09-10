@@ -1,5 +1,4 @@
 #include "Constants.h"
-#include "Ui.h"
 #include "Body.h"
 #include "Collisions.h"
 #include "Logger.h"
@@ -8,24 +7,34 @@
 #include "SFML/Graphics.hpp"
 #include <cmath>
 
-#undef DEBUG
+namespace Sim::ui {
+bool isHidden = false;
+bool IsDisplayName = true;
+int circlePointCount = 30;
+std::size_t activeBodyIdx{};
+float radius = 100;
+float velocity[2];
+
+sf::Vector2f arrToVec(const float arr[2]) {
+  return {arr[0], arr[1]};
+}
+}
+
 
 namespace Sim {
 void renderBodies(const std::vector<Body>& bodies, sf::RenderWindow& window) {
-  for (std::size_t i = 0; i < bodies.size(); ++i) {
-    if (i == 0 && !ui::drawFirstBody)
-      continue;
-
-    window.draw(bodies[i]);
+  for (const auto& body : bodies) {
+    if (!body.isHidden()) {
+      window.draw(body);
+    }
   }
-  // for (const auto& body : bodies) {
-  //   window.draw(body);
-  // }
 }
 
 void updatePositions(std::vector<Body>& bodies, sf::Time dt) {
   for (auto& body : bodies) {
-    body.updatePosition(dt.asSeconds());
+    if (!body.isHidden()) {
+      body.updatePosition(dt.asSeconds());
+    }
   }
 }
 
@@ -94,8 +103,6 @@ int main() {
   std::vector<Sim::Body> bodies{};
   Sim::initBodies(bodies, font);
 
-
-
   //--------------------Clock-----------------------------------------
   sf::Clock deltaClock{};
   deltaClock.start();
@@ -115,20 +122,25 @@ int main() {
         for (std::size_t i = 0; i < bodies.size(); ++i) {
           if (bodies[i].contains(mouseButtonPressed->position)) {
             Sim::ui::activeBodyIdx = i;
+            Sim::ui::velocity[0] = bodies[i].getVelocity().x;
+            Sim::ui::velocity[1] = bodies[i].getVelocity().y;
+            Sim::ui::IsDisplayName = bodies[i].isNameDisplayed();
+            Sim::ui::isHidden = bodies[i].isHidden();
+            Sim::ui::circlePointCount = static_cast<int>(bodies[i].getPointCount());
+            Sim::ui::radius = bodies[i].getRadius();
             break;
           }
         }
       }
     }
 
-
     // ====================== Update ====================
     // update ui toggled
     Sim::Body& activeBody = bodies[Sim::ui::activeBodyIdx];
-    activeBody.setIsDisplayName(Sim::ui::IsDisplayName);
+    activeBody.setIsNameDisplayed(Sim::ui::IsDisplayName);
     activeBody.setPointCount(Sim::ui::circlePointCount);
     activeBody.setRadius(Sim::ui::radius); // IMPORTANT: update geometry _before_ handling collisions
-    activeBody.setVelocity({Sim::ui::velocityX, Sim::ui::velocityY});
+    activeBody.setHidden(Sim::ui::isHidden);
 
     handleWallCollisions(bodies);
     handleCollisionsBetweenBodies(bodies);
@@ -142,19 +154,24 @@ int main() {
     // ====================== Render ======================
     renderBodies(bodies, window);
     // -----render imgui start-----
-    ImGui::Begin("Window title");
-    ImGui::Text("window text");
-    ImGui::Checkbox("Draw 1st body", &Sim::ui::drawFirstBody);
-    ImGui::SameLine();
-    ImGui::Checkbox("Display name", &Sim::ui::IsDisplayName);
+    ImGui::Begin("Shape Properties");
+    ImGui::Combo("Shape", )
+    ImGui::Checkbox("Hidden", &Sim::ui::isHidden);
     ImGui::SliderInt("Sides", &Sim::ui::circlePointCount, 3, 64);
     ImGui::SliderFloat("Radius", &Sim::ui::radius, 10.0f, 200.0f);
-    ImGui::Text("Velocity:");
-    ImGui::SliderFloat("x", &Sim::ui::velocityX, -300.0f, 300.0f, "%.1f");
-    ImGui::SliderFloat("y", &Sim::ui::velocityY, -300.0f, 300.0f, "%.1f");
+    if (ImGui::SliderFloat2("velocity", Sim::ui::velocity, -2000.0f, 2000.0f)) {
+      activeBody.setVelocity(Sim::ui::arrToVec(Sim::ui::velocity));
+    }
+    // if (ImGui::SliderFloat("x", &Sim::ui::velocityX, -300.0f, 300.0f, "%.1f")) {
+    //   activeBody.setVelocity({Sim::ui::velocityX, activeBody.getVelocity().y});
+    // }
+    // if (ImGui::SliderFloat("y", &Sim::ui::velocityY, -300.0f, 300.0f, "%.1f")) {
+    //   activeBody.setVelocity({activeBody.getVelocity().x, Sim::ui::velocityY});
+    // }
     if (ImGui::Button("Switch Theme")) {
       bgIndex = (bgIndex + 1) % backgrounds.size();
     }
+    ImGui::Checkbox("Display name", &Sim::ui::IsDisplayName);
     ImGui::End();
     ImGui::SFML::Render(window);
 
