@@ -4,6 +4,7 @@
 
 #ifndef SIMULATION_BODY_H
 #define SIMULATION_BODY_H
+#include "Ui.h"
 #include "SFML/Graphics.hpp"
 #include <cassert>
 
@@ -24,11 +25,17 @@ public:
     initText();
   }
 
-  std::string_view getName() const { return m_name; }
+  std::string_view getName() const {
+    return m_name;
+  }
 
-  float getRadius() const { return m_shape.getRadius(); }
+  float getRadius() const {
+    return m_shape.getRadius();
+  }
 
-  sf::Vector2f getPosition() const { return m_shape.getPosition(); }
+  sf::Vector2f getPosition() const {
+    return m_shape.getPosition();
+  }
 
   void setPosition(sf::Vector2f pos) {
     m_shape.setPosition(pos);
@@ -39,13 +46,25 @@ public:
     setPosition(getPosition() + offset);
   }
 
-  void setFillColor(sf::Color color) { m_shape.setFillColor(color); }
+  void setFillColor(sf::Color color) {
+    m_shape.setFillColor(color);
+  }
 
-  sf::Vector2f getVelocity() const { return m_velocity; }
+  sf::Vector2f getVelocity() const {
+    return m_velocity;
+  }
 
-  float getMass() const { return m_mass; }
+  float getMass() const {
+    return m_mass;
+  }
 
-  void setVelocity(sf::Vector2f velocity) { m_velocity = velocity; }
+  void setVelocity(sf::Vector2f velocity) {
+    m_velocity = velocity;
+  }
+
+  void setPointCount(std::size_t count) {
+    m_shape.setPointCount(count);
+  }
 
   void updatePosition(float dt) {
     setPosition(getPosition() + dt * m_velocity);
@@ -64,7 +83,9 @@ public:
 protected:
   void draw(sf::RenderTarget& target, sf::RenderStates states) const override {
     target.draw(m_shape, states);
-    target.draw(m_nameText);
+    if (ui::drawBodyName) {
+      target.draw(m_nameText);
+    }
   }
 
 private:
