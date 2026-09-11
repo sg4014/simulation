@@ -24,8 +24,13 @@ public:
     initText();
   }
 
-  std::string_view getName() const {
+  const std::string& getName() const {
     return m_name;
+  }
+
+  void setName(const char* name) {
+    m_name = name;
+    initText();
   }
 
   float getRadius() const {
@@ -96,21 +101,6 @@ public:
 
   void setHidden(bool hidden) {
     m_isHidden = hidden;
-  }
-
-  /**
-   * Get the vector pointing from this body to the other body.
-   *
-   * @param other the other body.
-   * @return a unit vector in the direction of the other body.
-   */
-  sf::Vector2f getDirectionTo(const Body& other) const {
-    return (other.getPosition() - getPosition()).normalized();
-  }
-
-  template<typename T>
-  bool contains(sf::Vector2<T> position) const {
-    return (static_cast<sf::Vector2f>(position) - getPosition()).lengthSquared() <= getRadius() * getRadius();
   }
 
 protected:

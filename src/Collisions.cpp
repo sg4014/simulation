@@ -7,6 +7,7 @@
 
 #include "Constants.h"
 #include "Body.h"
+#include "BodyUtil.h"
 
 namespace Sim {
 bool collidesLeftWall(const Body& body) {
@@ -114,7 +115,7 @@ bool areApproachingEachOther(const Body& b1, const Body& b2) {
   // Reminder: projection of u onto v = dot(u, v) / length(v), where v != 0.
   // length(v) > 0, so it doesn't affect the sign.
   const auto relativeVelocity = b2.getVelocity() - b1.getVelocity();
-  const auto axis = b1.getDirectionTo(b2);
+  const auto axis = getDirection(b1, b2);
   assert(axis.lengthSquared() != 0 && "Error: two bodies have the same position.");
 
   return relativeVelocity.dot(axis) < 0;

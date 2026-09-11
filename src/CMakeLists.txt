@@ -1,1 +1,1 @@
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE main.cpp Collisions.cpp Util.cpp)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE main.cpp Collisions.cpp Util.cpp BodyUtil.cpp)
