@@ -3,14 +3,14 @@
 #include "Collisions.h"
 #include "Util.h"
 #include "MyImgui.h"
+#include "BodyUtil.h"
+#include "Global.h"
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include "SFML/Graphics.hpp"
 #include <cmath>
 #include <iostream>
 
-#include "BodyUtil.h"
-#include "Global.h"
 
 namespace Sim {
 void renderBodies(const std::vector<Body>& bodies, sf::RenderWindow& window) {
@@ -120,6 +120,7 @@ int main() {
     }
 
     Sim::initBodies(Sim::UI::g_bodies, font);
+    //Sim::updateBodyNamesCollection();
 
     //--------------------Clock-----------------------------------------
     sf::Clock deltaClock{};

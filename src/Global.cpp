@@ -17,8 +17,5 @@ char g_nameBuffer[255];
 
 std::vector<Body> g_bodies{};
 
-// const char* names[3]{"earth", "sun", "saturn"};
-std::vector<const char*> g_names{"earth", "sun", "saturn"};
-
 std::size_t g_bgIndex = 0;
 }

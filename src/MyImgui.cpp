@@ -20,14 +20,31 @@ bool initImGui(sf::RenderWindow& window) {
     return true;
 }
 
+void defineCombo() {
+    std::vector<std::string> names;
+    std::vector<const char*> pNames{};
+
+    const auto bodiesCount = g_bodies.size();
+    names.resize(bodiesCount);
+    pNames.resize(bodiesCount);
+
+    for (std::size_t i = 0; i < bodiesCount; ++i) {
+        const auto& body = g_bodies[i];
+        names[i] = body.getName().toAnsiString();
+        pNames[i] = names[i].c_str();
+    }
+
+    if (ImGui::Combo("Shape",
+                     &g_activeBodyIdx,
+                     pNames.data(),
+                     static_cast<int>(names.size()))) {
+        resetParameters();
+    }
+}
+
 void definePropsTabItem() {
     if (ImGui::BeginTabItem("Shape props##s1")) {
-        if (ImGui::Combo("Shape",
-                         &g_activeBodyIdx,
-                         g_names.data(),
-                         static_cast<int>(g_names.size()))) {
-            resetParameters();
-        }
+        defineCombo();
 
         auto& activeBody = g_bodies[g_activeBodyIdx];
 
@@ -41,7 +58,7 @@ void definePropsTabItem() {
             activeBody.setRadius(g_radius);
         }
         if (ImGui::SliderFloat2("Velocity", g_velocity, -2000.0f, 2000.0f)) {
-            activeBody.setVelocity(Sim::UI::arrToVec(g_velocity));
+            activeBody.setVelocity(arrToVec(g_velocity));
         }
         if (ImGui::ColorEdit3("Color", g_imguiColor)) {
             activeBody.setFillColor(toSFMLColor(g_imguiColor));
@@ -49,11 +66,10 @@ void definePropsTabItem() {
         if (ImGui::Checkbox("Display name", &g_isDisplayName)) {
             activeBody.setIsNameDisplayed(g_isDisplayName);
         }
-        constexpr std::size_t bufferSize = 64;
+        constexpr std::size_t bufferSize = 128;
         static char buffer[bufferSize];
         if (ImGui::InputText("Name", buffer, bufferSize)) {
             activeBody.setName(buffer);
-            g_names[g_activeBodyIdx] = buffer;
         }
         if (ImGui::Button("Switch Theme")) {
             g_bgIndex = (g_bgIndex + 1) % g_backgrounds.size();

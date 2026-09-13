@@ -21,8 +21,6 @@ extern char g_nameBuffer[255];
 
 extern std::vector<Body> g_bodies;
 
-extern std::vector<const char*> g_names;
-
 extern std::size_t g_bgIndex;
 
 constexpr std::array g_backgrounds{sf::Color::Black, sf::Color::White};

@@ -10,28 +10,29 @@
 namespace Sim {
 class Body : public sf::Drawable {
 public:
-    explicit Body(std::string name,
+    explicit Body(sf::String name,
                   float radius,
                   float mass,
                   const sf::Font& font)
         : m_shape{radius},
-          m_nameText{font},
-          m_name{std::move(name)},
+          m_nameText{font, std::move(name)},
           m_mass{mass} {
         assert(radius > 0);
         assert(mass > 0);
         m_shape.setOrigin(m_shape.getGeometricCenter());
-        initText();
+        m_nameText.setCharacterSize(20);
+        m_nameText.setOrigin(m_nameText.getLocalBounds().getCenter());
     }
 
-    [[nodiscard]] const std::string& getName() const {
-        return m_name;
+    [[nodiscard]] const sf::String& getName() const {
+        return m_nameText.getString();
     }
 
-    void setName(const char* name) {
-        m_name = name;
-        initText();
+    void setName(const sf::String& name) {
+        m_nameText.setString(name);
+        m_nameText.setOrigin(m_nameText.getLocalBounds().getCenter());
     }
+
 
     [[nodiscard]] float getRadius() const {
         return m_shape.getRadius();
@@ -114,18 +115,10 @@ protected:
 private:
     sf::CircleShape m_shape{};
     sf::Text m_nameText;
-    std::string m_name{};
     sf::Vector2f m_velocity{};
     float m_mass{};
     bool m_isNameDisplayed = true;
     bool m_isHidden = false;
-
-    void initText() {
-        m_nameText.setString(m_name);
-        m_nameText.setCharacterSize(20);
-        m_nameText.setOrigin(m_nameText.getLocalBounds().getCenter());
-        m_nameText.setFillColor(sf::Color::White);
-    }
 };
 }
 
