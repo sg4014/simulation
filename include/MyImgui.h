@@ -6,7 +6,7 @@
 #define SIMULATION_UI_H
 #include "SFML/Graphics/RenderWindow.hpp"
 
-namespace Sim::UI {
+namespace Sim {
 bool initImGui(sf::RenderWindow& window);
 
 void definePropsTabItem();

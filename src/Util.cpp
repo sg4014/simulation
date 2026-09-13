@@ -5,6 +5,7 @@
 #include "Util.h"
 #include "Body.h"
 #include "Global.h"
+#include "Constants.h"
 #include "SFML/Graphics.hpp"
 #include <string>
 #include <format>
@@ -22,11 +23,30 @@ sf::Vector2f getWindowCenter(const sf::RenderWindow& window) {
 [[maybe_unused]] void printPosition(const Body& body) {
   std::cout << vecToString(body.getPosition()) << '\n';
 }
+
+std::string getRandomName() {
+    constexpr std::array adjectives{"funky", "elated", "pitiful", "joyful", "sad", "little", "cranky",
+                                    "drowsy",
+                                    "shiny", "thoughtful", "silly"};
+
+    constexpr std::array firstNames{"caspar", "dmitry", "rak", "wlad", "michael", "johnny", "vitaly", "suzy",
+                                    "chuan"};
+
+    const auto adjectiveIndex = Random::get<int>(0, std::ssize(adjectives) - 1);
+    const auto nameIndex = Random::get<int>(0, std::ssize(firstNames) - 1);
+    return std::string{adjectives[adjectiveIndex]} + " " + std::string{firstNames[nameIndex]};
 }
 
-namespace Sim::UI {
-sf::Vector2f arrToVec(const float arr[2]) {
-    return {arr[0], arr[1]};
+sf::Vector2f getRandomPosition(const Body& body) {
+    // In simple words: assume the Circle is a little larger than it is when picking its position to avoid spawning beyond a wall.
+    // Ceil, not floor, the radius to ensure the circle won't spawn with its edge beyond a wall.
+    // For example, if the radius is 10.89, and we floor the radius, and the position is {radius, radius},
+    // the circle's topmost and leftmost points will be beyond the top and left walls respectively by 0.89.
+    const auto radius = static_cast<int>(std::ceil(body.getRadius()));
+    return {
+        static_cast<float>(Random::get(radius, Constants::wWidth - radius)),
+        static_cast<float>(Random::get(radius, Constants::wHeight - radius))
+    };
 }
 
 // The ImGui color {r, g, b} wheel requires floats from 0 to 1.

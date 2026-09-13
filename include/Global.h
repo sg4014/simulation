@@ -9,7 +9,7 @@
 #include <array>
 #include <vector>
 
-namespace Sim::UI {
+namespace Sim {
 extern bool g_isHidden;
 extern bool g_isDisplayName;
 extern int g_bodySides;
@@ -18,11 +18,12 @@ extern float g_radius;
 extern float g_velocity[2];
 extern float g_imguiColor[3];
 extern char g_nameBuffer[255];
+extern bool g_isPaused;
 
 extern std::vector<Body> g_bodies;
 
 extern std::size_t g_bgIndex;
 
-constexpr std::array g_backgrounds{sf::Color::Black, sf::Color::White};
+constexpr std::array g_backgrounds{sf::Color::White, sf::Color::Black};
 }
 #endif //SIMULATION_GLOBAL_H

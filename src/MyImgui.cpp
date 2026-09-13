@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
-namespace Sim::UI {
+namespace Sim {
 bool initImGui(sf::RenderWindow& window) {
     if (!ImGui::SFML::Init(window)) {
         return false;
@@ -20,7 +20,11 @@ bool initImGui(sf::RenderWindow& window) {
     return true;
 }
 
-void defineCombo() {
+// label must be a unique UI component label
+void defineShapePicker(const char* label) {
+    // ImGui requires C-strings (1 byte per char), but bodies store their names in UTF32 format (4 byte per char).
+    // Hence, convert utf32 strings to ANSI strings, store them and provide pointers to them to ImGui.
+    // .toAnsiString() returns a temporary, so we have to store it (in `names`) before passing a pointer to it.
     std::vector<std::string> names;
     std::vector<const char*> pNames{};
 
@@ -34,7 +38,7 @@ void defineCombo() {
         pNames[i] = names[i].c_str();
     }
 
-    if (ImGui::Combo("Shape",
+    if (ImGui::Combo(label,
                      &g_activeBodyIdx,
                      pNames.data(),
                      static_cast<int>(names.size()))) {
@@ -44,7 +48,7 @@ void defineCombo() {
 
 void definePropsTabItem() {
     if (ImGui::BeginTabItem("Shape props##s1")) {
-        defineCombo();
+        defineShapePicker("Shape");
 
         auto& activeBody = g_bodies[g_activeBodyIdx];
 

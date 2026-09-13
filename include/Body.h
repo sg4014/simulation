@@ -22,6 +22,7 @@ public:
         m_shape.setOrigin(m_shape.getGeometricCenter());
         m_nameText.setCharacterSize(20);
         m_nameText.setOrigin(m_nameText.getLocalBounds().getCenter());
+        m_nameText.setFillColor(sf::Color::Black);
     }
 
     [[nodiscard]] const sf::String& getName() const {

@@ -1,3 +1,5 @@
+#include <imgui.h>
+
 #include "Constants.h"
 #include "Body.h"
 #include "Collisions.h"
@@ -5,7 +7,7 @@
 #include "MyImgui.h"
 #include "BodyUtil.h"
 #include "Global.h"
-#include "imgui.h"
+#include "Random.h"
 #include "imgui-SFML.h"
 #include "SFML/Graphics.hpp"
 #include <cmath>
@@ -29,46 +31,27 @@ void updatePositions(std::vector<Body>& bodies, sf::Time dt) {
     }
 }
 
-void initBodies(std::vector<Body>& bodies, const sf::Font& font) {
-    bodies.reserve(3);
-    bodies.emplace_back("earth", 80, 80, font);
-    bodies.emplace_back("sun", 20, 20, font);
-    bodies.emplace_back("saturn", 120, 120, font);
-
-    const std::uint8_t opacity = 100;
-    const sf::Color blue{0, 0, 255, opacity};
-    const sf::Color red{255, 0, 0, opacity};
-    const sf::Color green{0, 255, 0, opacity};
-    // earth
-    bodies[0].setFillColor(blue);
-    bodies[0].setPosition({
-        bodies[0].getRadius(),
-        Constants::wHeight / 2.f
-    });
-    bodies[0].setVelocity({200, 400});
-
-    // sun
-    bodies[1].setFillColor(red);
-    bodies[1].setPosition(Constants::wCenter);
-
-    // saturn
-    bodies[2].setFillColor(green);
-    bodies[2].setPosition({
-        Constants::wWidth - bodies[2].getRadius(),
-        Constants::wHeight / 2.f
-    });
-    bodies[2].setVelocity({-200, 0});
+void initBodies(std::vector<Body>& bodies, int n, const sf::Font& font) {
+    bodies.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        bodies.emplace_back(getRandomName(), Random::get(20, 120), Random::get(5, 150), font);
+        auto& body = bodies[i];
+        body.setFillColor(getRandomColor());
+        body.setPosition(getRandomPosition(body));
+        body.setVelocity({
+            static_cast<float>(Random::get(-1000, 1000)),
+            static_cast<float>(Random::get(-800, 800))
+        });
+    }
 }
 
-bool selectClickedBody(sf::Vector2i clickPosition) {
-    for (std::size_t i = 0; i < UI::g_bodies.size(); ++i) {
-        if (isWithinBody(clickPosition, UI::g_bodies[i])) {
-            UI::g_activeBodyIdx = static_cast<int>(i);
-            UI::resetParameters();
-            return true;
+void selectClickedBody(sf::Vector2i clickPosition) {
+    for (std::size_t i = 0; i < g_bodies.size(); ++i) {
+        if (isWithinBody(clickPosition, g_bodies[i])) {
+            g_activeBodyIdx = static_cast<int>(i);
+            resetParameters();
         }
     }
-    return false;
 }
 
 void processEvents(sf::RenderWindow& window) {
@@ -77,28 +60,32 @@ void processEvents(sf::RenderWindow& window) {
 
         if (event->is<sf::Event::Closed>())
             window.close();
-        else if (const auto mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
-            selectClickedBody(mouseButtonPressed->position);
+        else if (const auto* mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+            if (!ImGui::GetIO().WantCaptureMouse) {
+                // select body only if it wasn't clicked "through" an ImGui window
+                selectClickedBody(mouseButtonPressed->position);
+            }
+        } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+            if (keyPressed->scancode == sf::Keyboard::Scancode::Space) {
+                g_isPaused = !g_isPaused;
+            }
         }
     }
 }
 
-void update(sf::RenderWindow& window, sf::Time dt) {
-    handleWallCollisions(UI::g_bodies);
-    handleCollisionsBetweenBodies(UI::g_bodies);
-    updatePositions(UI::g_bodies, dt);
-
-    ImGui::SFML::Update(window, dt);
+void updateBodies(sf::Time dt) {
+    handleWallCollisions(g_bodies);
+    handleCollisionsBetweenBodies(g_bodies);
+    updatePositions(g_bodies, dt);
 }
 
 void render(sf::RenderWindow& window) {
-    window.clear(UI::g_backgrounds[UI::g_bgIndex]);
-    UI::defineUI();
-    renderBodies(UI::g_bodies, window);
+    window.clear(g_backgrounds[g_bgIndex]);
+    defineUI();
+    renderBodies(g_bodies, window);
     ImGui::SFML::Render(window);
     window.display();
 }
-
 }
 
 int main() {
@@ -108,7 +95,7 @@ int main() {
                             "Simulation"};
     window.setVerticalSyncEnabled(true);
 
-    if (!Sim::UI::initImGui(window)) {
+    if (!Sim::initImGui(window)) {
         std::cerr << "Couldn't initialize ImGui.\n";
         std::exit(1);
     }
@@ -119,8 +106,7 @@ int main() {
         std::exit(1);
     }
 
-    Sim::initBodies(Sim::UI::g_bodies, font);
-    //Sim::updateBodyNamesCollection();
+    Sim::initBodies(Sim::g_bodies, 20, font);
 
     //--------------------Clock-----------------------------------------
     sf::Clock deltaClock{};
@@ -130,7 +116,10 @@ int main() {
     //--------------------Main loop-------------------------------------
     while (window.isOpen()) {
         Sim::processEvents(window);
-        Sim::update(window, dt);
+        if (!Sim::g_isPaused) {
+            Sim::updateBodies(dt);
+        }
+        ImGui::SFML::Update(window, dt);
         Sim::render(window);
         dt = deltaClock.restart();
     }
