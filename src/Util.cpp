@@ -67,10 +67,11 @@ void resetParameters() {
     g_isHidden = activeBody.isHidden();
     g_bodySides = static_cast<int>(activeBody.getPointCount());
     g_radius = activeBody.getRadius();
+
     const auto sfmlColor = activeBody.getFillColor();
-    g_imguiColor[0] = static_cast<float>(sfmlColor.r / 255);
-    g_imguiColor[1] = static_cast<float>(sfmlColor.g / 255);
-    g_imguiColor[2] = static_cast<float>(sfmlColor.b / 255);
+    g_imguiColor[0] = static_cast<float>(sfmlColor.r) / 255;
+    g_imguiColor[1] = static_cast<float>(sfmlColor.g) / 255;
+    g_imguiColor[2] = static_cast<float>(sfmlColor.b) / 255;
 }
 }
 
