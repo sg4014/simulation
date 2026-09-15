@@ -10,10 +10,10 @@
 namespace Sim {
 class Body : public sf::Drawable {
 public:
-    explicit Body(sf::String name,
-                  float radius,
-                  float mass,
-                  const sf::Font& font)
+    Body(sf::String name,
+         float radius,
+         float mass,
+         const sf::Font& font)
         : m_shape{radius},
           m_nameText{font, std::move(name)},
           m_mass{mass} {
@@ -121,6 +121,18 @@ private:
     bool m_isNameDisplayed = true;
     bool m_isHidden = false;
 };
+
+inline sf::Vector2f getDirection(const Body& source, const Body& target) {
+    return (target.getPosition() - source.getPosition()).normalized();
+}
+
+inline bool isWithinBody(sf::Vector2f position, const Body& body) {
+    return (position - body.getPosition()).lengthSquared() <= body.getRadius() * body.getRadius();
+}
+
+inline bool isWithinBody(sf::Vector2i position, const Body& body) {
+    return isWithinBody(static_cast<sf::Vector2f>(position), body);
+}
 }
 
 #endif //SIMULATION_BODY_H
