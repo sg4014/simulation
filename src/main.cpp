@@ -34,7 +34,7 @@ void updatePositions(std::vector<Body>& bodies, sf::Time dt) {
 void initBodies(std::vector<Body>& bodies, int n, const sf::Font& font) {
     bodies.reserve(n);
     for (int i = 0; i < n; ++i) {
-        bodies.emplace_back(getRandomName(), Random::get(20, 120), Random::get(5, 150), font);
+        bodies.emplace_back(getRandomName(), Random::get(10, 40), Random::get(5, 150), font);
         auto& body = bodies[i];
         body.setFillColor(getRandomColor());
         body.setPosition(getRandomPosition(body));
@@ -106,7 +106,7 @@ int main() {
         std::exit(1);
     }
 
-    Sim::initBodies(Sim::g_bodies, 20, font);
+    Sim::initBodies(Sim::g_bodies, 1000, font);
 
     //--------------------Clock-----------------------------------------
     sf::Clock deltaClock{};

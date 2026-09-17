@@ -123,7 +123,10 @@ private:
 };
 
 inline sf::Vector2f getDirection(const Body& source, const Body& target) {
-    return (target.getPosition() - source.getPosition()).normalized();
+    const auto posDiff = target.getPosition() - source.getPosition();
+    return posDiff.lengthSquared() == 0
+               ? sf::Vector2f{1, 0}
+               : posDiff.normalized();
 }
 
 inline bool isWithinBody(sf::Vector2f position, const Body& body) {
